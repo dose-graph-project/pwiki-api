@@ -1,0 +1,34 @@
+query SubstanceQuery($substance: String!) {
+    substances(query: $substance) {
+        name
+
+        crossTolerances
+
+        roas {
+            name
+
+            dose {
+                units
+                threshold
+                heavy
+                common { min max }
+                light { min max }
+                strong { min max }
+            }
+
+            duration {
+                afterglow { min max units }
+                comeup { min max units }
+                duration { min max units }
+                offset { min max units }
+                onset { min max units }
+                peak { min max units }
+                total { min max units }
+            }
+        }
+
+        uncertainInteractions { name }
+        unsafeInteractions { name }
+        dangerousInteractions { name }
+    }
+}
