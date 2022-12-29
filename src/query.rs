@@ -2,7 +2,7 @@ use graphql_client::GraphQLQuery;
 
 use crate::error::ApiError;
 use crate::structure::{
-    DangerousInteraction, Dose, DoseTimeRange, Duration, RoutesOfAdministration, Substance,
+    DangerousInteraction, DoseMetadata, DoseTimeRange, Duration, RouteOfAdministration, Substance,
     TimeUnits, UncertainInteraction, UnsafeInteraction,
 };
 
@@ -169,19 +169,19 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesUncertainIntera
     }
 }
 
-impl From<crate::query::substance_query::SubstanceQuerySubstancesRoas> for RoutesOfAdministration {
+impl From<crate::query::substance_query::SubstanceQuerySubstancesRoas> for RouteOfAdministration {
     fn from(roa: crate::query::substance_query::SubstanceQuerySubstancesRoas) -> Self {
-        RoutesOfAdministration {
-            name: roa.name.unwrap_or_default(),
-            dose: roa.dose.map(|i| i.into()).unwrap_or_default(),
+        RouteOfAdministration {
+            ty: roa.name.map(|i| i.into()).unwrap_or_default(),
+            dose_metadata: roa.dose.map(|i| i.into()).unwrap_or_default(),
             duration: roa.duration.map(|i| i.into()).unwrap_or_default(),
         }
     }
 }
 
-impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDose> for Dose {
-    fn from(dosage: crate::query::substance_query::SubstanceQuerySubstancesRoasDose) -> Dose {
-        Dose {
+impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDose> for DoseMetadata {
+    fn from(dosage: crate::query::substance_query::SubstanceQuerySubstancesRoasDose) -> DoseMetadata {
+        DoseMetadata {
             units: dosage.units.unwrap_or_default().into(),
             threshold: dosage.threshold,
             heavy: dosage.heavy,
@@ -207,16 +207,19 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let units = i.units.unwrap_or_default().into();
                 let start = i.min.unwrap_or_default();
                 let end = i.max.unwrap_or_default();
+                let midpoint = (start + end) / 2.0;
+
                 let duration = match units {
-                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(start * 60.0),
-                    TimeUnits::Hours => std::time::Duration::from_secs_f64(start * 3600.0),
-                    TimeUnits::Invalid => unimplemented!(),
+                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
+                    TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    _ => unimplemented!(),
                 };
 
                 DoseTimeRange {
                     duration,
                     units,
                     start,
+                    midpoint,
                     end,
                 }
             }),
@@ -224,16 +227,19 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let units = i.units.unwrap_or_default().into();
                 let start = i.min.unwrap_or_default();
                 let end = i.max.unwrap_or_default();
+                let midpoint = (start + end) / 2.0;
+
                 let duration = match units {
-                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(start * 60.0),
-                    TimeUnits::Hours => std::time::Duration::from_secs_f64(start * 3600.0),
-                    TimeUnits::Invalid => unimplemented!(),
+                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
+                    TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    _ => unimplemented!(),
                 };
 
                 DoseTimeRange {
                     duration,
                     units,
                     start,
+                    midpoint,
                     end,
                 }
             }),
@@ -241,16 +247,19 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let units = i.units.unwrap_or_default().into();
                 let start = i.min.unwrap_or_default();
                 let end = i.max.unwrap_or_default();
+                let midpoint = (start + end) / 2.0;
+
                 let duration = match units {
-                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(start * 60.0),
-                    TimeUnits::Hours => std::time::Duration::from_secs_f64(start * 3600.0),
-                    TimeUnits::Invalid => unimplemented!(),
+                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
+                    TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    _ => unimplemented!(),
                 };
 
                 DoseTimeRange {
                     duration,
                     units,
                     start,
+                    midpoint,
                     end,
                 }
             }),
@@ -258,16 +267,19 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let units = i.units.unwrap_or_default().into();
                 let start = i.min.unwrap_or_default();
                 let end = i.max.unwrap_or_default();
+                let midpoint = (start + end) / 2.0;
+
                 let duration = match units {
-                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(start * 60.0),
-                    TimeUnits::Hours => std::time::Duration::from_secs_f64(start * 3600.0),
-                    TimeUnits::Invalid => unimplemented!(),
+                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
+                    TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    _ => unimplemented!(),
                 };
 
                 DoseTimeRange {
                     duration,
                     units,
                     start,
+                    midpoint,
                     end,
                 }
             }),
@@ -275,16 +287,19 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let units = i.units.unwrap_or_default().into();
                 let start = i.min.unwrap_or_default();
                 let end = i.max.unwrap_or_default();
+                let midpoint = (start + end) / 2.0;
+
                 let duration = match units {
-                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(start * 60.0),
-                    TimeUnits::Hours => std::time::Duration::from_secs_f64(start * 3600.0),
-                    TimeUnits::Invalid => unimplemented!(),
+                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
+                    TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    _ => unimplemented!(),
                 };
 
                 DoseTimeRange {
                     duration,
                     units,
                     start,
+                    midpoint,
                     end,
                 }
             }),
@@ -292,16 +307,19 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let units = i.units.unwrap_or_default().into();
                 let start = i.min.unwrap_or_default();
                 let end = i.max.unwrap_or_default();
+                let midpoint = (start + end) / 2.0;
+
                 let duration = match units {
-                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(start * 60.0),
-                    TimeUnits::Hours => std::time::Duration::from_secs_f64(start * 3600.0),
-                    TimeUnits::Invalid => unimplemented!(),
+                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
+                    TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    _ => unimplemented!(),
                 };
 
                 DoseTimeRange {
                     duration,
                     units,
                     start,
+                    midpoint,
                     end,
                 }
             }),
@@ -309,16 +327,19 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let units = i.units.unwrap_or_default().into();
                 let start = i.min.unwrap_or_default();
                 let end = i.max.unwrap_or_default();
+                let midpoint = (start + end) / 2.0;
+
                 let duration = match units {
-                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(start * 60.0),
-                    TimeUnits::Hours => std::time::Duration::from_secs_f64(start * 3600.0),
-                    TimeUnits::Invalid => unimplemented!(),
+                    TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
+                    TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    _ => unimplemented!(),
                 };
 
                 DoseTimeRange {
                     duration,
                     units,
                     start,
+                    midpoint,
                     end,
                 }
             }),
