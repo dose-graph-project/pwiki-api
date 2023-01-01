@@ -65,7 +65,7 @@ impl SubstanceQuery {
             ]))
         })?;
 
-        Ok(s.into_iter().filter_map(|i| i).map(|i| Substance::from(i)).collect::<Vec<_>>())
+        Ok(s.into_iter().filter_map(|i| i).map(|i| i.into()).collect::<Vec<_>>())
     }
 }
 
@@ -212,6 +212,7 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let duration = match units {
                     TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
                     TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    TimeUnits::Seconds => std::time::Duration::from_secs_f64(end),
                     _ => unimplemented!(),
                 };
 
@@ -232,6 +233,7 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let duration = match units {
                     TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
                     TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    TimeUnits::Seconds => std::time::Duration::from_secs_f64(end),
                     _ => unimplemented!(),
                 };
 
@@ -252,6 +254,7 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let duration = match units {
                     TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
                     TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    TimeUnits::Seconds => std::time::Duration::from_secs_f64(end),
                     _ => unimplemented!(),
                 };
 
@@ -272,6 +275,7 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let duration = match units {
                     TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
                     TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    TimeUnits::Seconds => std::time::Duration::from_secs_f64(end),
                     _ => unimplemented!(),
                 };
 
@@ -292,6 +296,7 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let duration = match units {
                     TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
                     TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    TimeUnits::Seconds => std::time::Duration::from_secs_f64(end),
                     _ => unimplemented!(),
                 };
 
@@ -312,6 +317,7 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let duration = match units {
                     TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
                     TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    TimeUnits::Seconds => std::time::Duration::from_secs_f64(end),
                     _ => unimplemented!(),
                 };
 
@@ -332,6 +338,7 @@ impl From<crate::query::substance_query::SubstanceQuerySubstancesRoasDuration> f
                 let duration = match units {
                     TimeUnits::Minutes => std::time::Duration::from_secs_f64(end * 60.0),
                     TimeUnits::Hours => std::time::Duration::from_secs_f64(end * 3600.0),
+                    TimeUnits::Seconds => std::time::Duration::from_secs_f64(end),
                     _ => unimplemented!(),
                 };
 

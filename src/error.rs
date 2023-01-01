@@ -8,7 +8,7 @@ pub struct ApiError {
 
 impl ApiError {
     pub fn new(messages: Vec<String>) -> Self {
-        let len = messages.len().clone();
+        let len = messages.len();
         ApiError {
             messages,
             err_count: len,

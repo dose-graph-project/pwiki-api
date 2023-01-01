@@ -9,6 +9,7 @@ edition = "2021"
 graphql_client = "0.11.0"
 serde = { version = "1.0.67", features = ["derive"] }
 reqwest = { version = "0.11.13", features = ["json"] }
+chrono = "0.4.23"
 
 [dev-dependencies]
 tokio = { version = "1.23.0", features = ["full"] }

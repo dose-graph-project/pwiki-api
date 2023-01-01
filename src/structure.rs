@@ -1,6 +1,10 @@
+#![allow(unused_assignments)]
+
+use chrono::{DateTime, Utc};
+
 pub type DoseRange = std::ops::Range<f64>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Substance {
     pub name: String,
     pub cross_tolerances: Vec<String>,
@@ -11,14 +15,29 @@ pub struct Substance {
 }
 
 impl Substance {
-    pub fn dosage_type(&self, dosage: Dosage, roa: ROAs) -> Option<DosageType> {
-        let route_of_administration = self.routes_of_administration.iter().find(|i| i.ty == roa);
+    pub fn new_ingestion(
+        &self,
+        amount: f64,
+        units: DoseUnits,
+        timestamp: DateTime<Utc>,
+        route_of_administration: ROAs,
+    ) -> Ingestion {
+        Ingestion::new(
+            amount,
+            units,
+            timestamp,
+            route_of_administration,
+            self.clone(),
+        )
+    }
 
-        if let Some(roa) = route_of_administration {
-            Some(roa.dosage_type(dosage))
-        } else {
-            None
-        }
+    pub fn dosage_type(&self, dosage: &Ingestion) -> Option<DosageType> {
+        let route_of_administration = self
+            .routes_of_administration
+            .iter()
+            .find(|i| i.ty == dosage.route_of_administration);
+
+        route_of_administration.map(|roa| roa.dosage_type(dosage))
     }
 
     pub fn route_of_administration(&self, roa: ROAs) -> Option<RouteOfAdministration> {
@@ -38,8 +57,8 @@ pub struct RouteOfAdministration {
 
 impl RouteOfAdministration {
     /// time since start is hours
-    pub fn calc_effect(&self, dosage: Dosage, mut time_since_start: f64) -> f64 {
-        let dosage_type = self.dosage_type(dosage);
+    pub fn calc_effect(&self, dosage: Ingestion, mut time_since_start: f64) -> f64 {
+        let dosage_type = self.dosage_type(&dosage);
 
         if let DosageType::BelowThreshold = dosage_type {
             return 0f64;
@@ -86,20 +105,237 @@ impl RouteOfAdministration {
 
         0f64
     }
+
+    pub fn cumulative_total(&self) -> f64 {
+        let onset_end = self
+            .duration
+            .onset
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .end;
+
+        let comeup_end = self
+            .duration
+            .comeup
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .end
+            + onset_end;
+        let peak_end = self
+            .duration
+            .peak
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .end
+            + comeup_end;
+        let offset_end = self
+            .duration
+            .offset
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .end
+            + peak_end;
+
+        offset_end
+    }
+
+    pub fn estimate_points(&self) -> Vec<(f64, f64)> {
+        let onset = self
+            .duration
+            .onset
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .midpoint();
+        let comeup = self
+            .duration
+            .comeup
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .midpoint()
+            + onset;
+        let peak = self
+            .duration
+            .peak
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .midpoint()
+            + comeup;
+        let offset = self
+            .duration
+            .offset
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .midpoint()
+            + peak;
+
+        vec![
+            (0f64, 0f64),
+            (onset, 0f64),
+            (comeup, 1f64),
+            (peak, 1f64),
+            (offset, 0f64),
+        ]
+    }
+
+    pub fn comeup_distribution(&self) -> Vec<(f64, f64)> {
+        let onset_start = self
+            .duration
+            .onset
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .start;
+        let onset_end = self
+            .duration
+            .onset
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .end;
+
+        let comeup_start = self
+            .duration
+            .comeup
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .start
+            + onset_start;
+        let comeup_end = self
+            .duration
+            .comeup
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .end
+            + onset_end;
+
+        vec![
+            (onset_start, 0f64),
+            (onset_end, 0f64),
+            (comeup_end, 1f64),
+            (comeup_start, 1f64),
+            (onset_start, 0f64),
+        ]
+    }
+
+    pub fn offset_distribution(&self) -> Vec<(f64, f64)> {
+        let onset_start = self
+            .duration
+            .onset
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .start;
+        let onset_end = self
+            .duration
+            .onset
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .end;
+
+        let comeup_start = self
+            .duration
+            .comeup
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .start
+            + onset_start;
+        let comeup_end = self
+            .duration
+            .comeup
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .end
+            + onset_end;
+
+        let peak_start = self
+            .duration
+            .peak
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .start
+            + comeup_start;
+        let peak_end = self
+            .duration
+            .peak
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .end
+            + comeup_end;
+
+        let offset_start = self
+            .duration
+            .offset
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .start
+            + peak_start;
+        let offset_end = self
+            .duration
+            .offset
+            .as_ref()
+            .unwrap_or(&DoseTimeRange::ZERO)
+            .as_seconds()
+            .end
+            + peak_end;
+
+        vec![
+            (peak_start, 1f64),
+            (peak_end, 1f64),
+            (offset_end, 0f64),
+            (offset_start, 0f64),
+            (peak_start, 1f64),
+        ]
+    }
 }
 
 fn lerp(f1: f64, f2: f64, t: f64) -> f64 {
     f1 * (1.0 - t) + f2 * t
 }
 
-pub struct Dosage {
+#[derive(Debug, Clone)]
+pub struct Ingestion {
     pub units: DoseUnits,
     pub amount: f64,
+    pub timestamp: DateTime<Utc>,
+    pub route_of_administration: ROAs,
+    pub substance: Substance,
 }
 
-impl Dosage {
-    pub fn new(amount: f64, units: DoseUnits) -> Self {
-        Self { units, amount }
+impl Ingestion {
+    pub fn new(
+        amount: f64,
+        units: DoseUnits,
+        timestamp: DateTime<Utc>,
+        route_of_administration: ROAs,
+        substance: Substance,
+    ) -> Self {
+        Self {
+            units,
+            amount,
+            timestamp,
+            route_of_administration,
+            substance,
+        }
+    }
+
+    pub fn dosage_type(&self) -> Option<DosageType> {
+        self.substance.dosage_type(self)
     }
 
     pub fn set_amount(&mut self, amount: f64) {
@@ -126,11 +362,37 @@ impl Dosage {
 
         self.set_units(units);
     }
+
+    pub fn normalise_as_units(&self, units: DoseUnits) -> Self {
+        dbg!(&self.units, &units);
+        match (&self.units, &units) {
+            (DoseUnits::Mg, DoseUnits::G) | (DoseUnits::Ug, DoseUnits::Mg) => Self {
+                amount: self.amount / 1e3,
+                ..self.clone()
+            },
+            (DoseUnits::G, DoseUnits::Mg) | (DoseUnits::Mg, DoseUnits::Ug) => Self {
+                amount: self.amount * 1e3,
+                ..self.clone()
+            },
+            (DoseUnits::Ug, DoseUnits::G) => Self {
+                amount: self.amount / 1e6,
+                ..self.clone()
+            },
+            (DoseUnits::G, DoseUnits::Ug) => Self {
+                amount: self.amount * 1e6,
+                ..self.clone()
+            },
+            (l, r) if l == r => {
+                self.clone()
+            },
+            _ => unreachable!()
+        }
+    }
 }
 
 impl RouteOfAdministration {
-    pub fn dosage_type(&self, mut dosage: Dosage) -> DosageType {
-        dosage.normalise_to_units(self.dose_metadata.units);
+    pub fn dosage_type(&self, dosage: &Ingestion) -> DosageType {
+        dosage.normalise_as_units(self.dose_metadata.units);
 
         if let Some(heavy) = self.dose_metadata.heavy {
             if dosage.amount >= heavy {
@@ -144,19 +406,19 @@ impl RouteOfAdministration {
             }
         }
 
-        if let Some(light) = self.dose_metadata.light.clone() {
+        if let Some(light) = &self.dose_metadata.light {
             if light.contains(&dosage.amount) {
                 return DosageType::Light;
             }
         }
 
-        if let Some(common) = self.dose_metadata.common.clone() {
+        if let Some(common) = &self.dose_metadata.common {
             if common.contains(&dosage.amount) {
                 return DosageType::Common;
             }
         }
 
-        if let Some(strong) = self.dose_metadata.strong.clone() {
+        if let Some(strong) = &self.dose_metadata.strong {
             if strong.contains(&dosage.amount) {
                 return DosageType::Strong;
             }
@@ -166,7 +428,7 @@ impl RouteOfAdministration {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DosageType {
     Threshold,
     Heavy,
@@ -186,7 +448,7 @@ pub struct DoseMetadata {
     pub strong: Option<DoseRange>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DoseUnits {
     Mg,
     Ml,
@@ -226,6 +488,7 @@ impl From<String> for TimeUnits {
         match &*s.to_lowercase() {
             "hours" => TimeUnits::Hours,
             "minutes" => TimeUnits::Minutes,
+            "seconds" => TimeUnits::Seconds,
             _ => TimeUnits::Invalid,
         }
     }
@@ -248,7 +511,7 @@ pub struct Duration {
     pub total: Option<DoseTimeRange>,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct DoseTimeRange {
     pub duration: std::time::Duration,
     pub start: f64,
@@ -257,7 +520,21 @@ pub struct DoseTimeRange {
     pub units: TimeUnits,
 }
 
+impl Default for DoseTimeRange {
+    fn default() -> Self {
+        Self::ZERO
+    }
+}
+
 impl DoseTimeRange {
+    pub const ZERO: DoseTimeRange = DoseTimeRange {
+        duration: std::time::Duration::ZERO,
+        start: 0f64,
+        end: 0f64,
+        midpoint: 0f64,
+        units: TimeUnits::Hours,
+    };
+
     pub fn set_units(&mut self, units: TimeUnits) {
         self.units = units;
     }
@@ -311,16 +588,38 @@ impl DoseTimeRange {
                 start: self.start / 60.0,
                 end: self.end / 60.0,
                 midpoint: self.midpoint / 60.0,
-                units: TimeUnits::Hours,
+                units: TimeUnits::Minutes,
             },
             TimeUnits::Hours => DoseTimeRange {
                 duration: self.duration,
                 start: self.start * 60.0,
                 end: self.end * 60.0,
                 midpoint: self.midpoint * 60.0,
-                units: TimeUnits::Hours,
+                units: TimeUnits::Minutes,
             },
             TimeUnits::Minutes => self.to_owned(),
+
+            _ => unimplemented!(),
+        }
+    }
+
+    pub fn as_seconds(&self) -> DoseTimeRange {
+        match &self.units {
+            TimeUnits::Minutes => DoseTimeRange {
+                duration: self.duration,
+                start: self.start * 60.0,
+                end: self.end * 60.0,
+                midpoint: self.midpoint * 60.0,
+                units: TimeUnits::Seconds,
+            },
+            TimeUnits::Hours => DoseTimeRange {
+                duration: self.duration,
+                start: self.start * 3600.0,
+                end: self.end * 3600.0,
+                midpoint: self.midpoint * 3600.0,
+                units: TimeUnits::Seconds,
+            },
+            TimeUnits::Seconds => self.to_owned(),
 
             _ => unimplemented!(),
         }
@@ -332,13 +631,15 @@ impl DoseTimeRange {
                 self.set_start(self.start / 60.0);
                 self.set_end(self.end / 60.0);
                 self.recalc_midpoint();
+                self.set_units(TimeUnits::Hours);
             }
             TimeUnits::Seconds => {
                 self.set_start(self.start / 3600.0);
                 self.set_end(self.end / 3600.0);
                 self.recalc_midpoint();
+                self.set_units(TimeUnits::Hours);
             }
-            _ => return,
+            _ => (),
         }
     }
 
@@ -348,14 +649,16 @@ impl DoseTimeRange {
                 self.set_start(self.start * 60.0);
                 self.set_end(self.end * 60.0);
                 self.recalc_midpoint();
+                self.set_units(TimeUnits::Minutes);
             }
             TimeUnits::Seconds => {
                 self.set_start(self.start / 60.0);
                 self.set_end(self.end / 60.0);
                 self.recalc_midpoint();
+                self.set_units(TimeUnits::Minutes);
             }
 
-            _ => return,
+            _ => (),
         }
     }
 
@@ -365,14 +668,16 @@ impl DoseTimeRange {
                 self.set_start(self.start * 3600.0);
                 self.set_end(self.end * 3600.0);
                 self.recalc_midpoint();
+                self.set_units(TimeUnits::Seconds);
             }
             TimeUnits::Minutes => {
                 self.set_start(self.start * 60.0);
                 self.set_end(self.end * 60.0);
                 self.recalc_midpoint();
+                self.set_units(TimeUnits::Seconds);
             }
 
-            _ => return,
+            _ => (),
         }
     }
 
@@ -383,22 +688,22 @@ impl DoseTimeRange {
             (.., TimeUnits::Minutes) => self.to_minutes(),
             (.., TimeUnits::Seconds) => self.to_seconds(),
 
-            _ => return,
+            _ => (),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UncertainInteraction {
     pub name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UnsafeInteraction {
     pub name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DangerousInteraction {
     pub name: String,
 }
@@ -456,8 +761,8 @@ mod test {
     #[tokio::test]
     async fn test_dosage_type() {
         let data = SubstanceQuery::substance_data("LSD").await.unwrap();
-        let dosage_type = data[0].dosage_type(Dosage::new(100.0, DoseUnits::Ug), ROAs::Sublingual);
-
-        dbg!(dosage_type);
+        let ingestion = data[0].new_ingestion(100.0, DoseUnits::Ug, Utc::now(), ROAs::Sublingual);
+        let dosage_type = ingestion.dosage_type();
+        assert_eq!(dosage_type.unwrap(), DosageType::Common);
     }
 }
