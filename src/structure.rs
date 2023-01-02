@@ -1,5 +1,7 @@
 #![allow(unused_assignments)]
 
+use std::fmt::Display;
+
 use chrono::{DateTime, Utc};
 
 pub type DoseRange = std::ops::Range<f64>;
@@ -334,6 +336,13 @@ impl Ingestion {
         }
     }
 
+    pub fn roa(&self) -> RouteOfAdministration {
+        self
+            .substance
+            .route_of_administration(self.route_of_administration)
+            .unwrap()
+    }
+
     pub fn dosage_type(&self) -> Option<DosageType> {
         self.substance.dosage_type(self)
     }
@@ -460,6 +469,18 @@ pub enum DoseUnits {
 impl Default for DoseUnits {
     fn default() -> Self {
         DoseUnits::Invalid
+    }
+}
+
+impl Display for DoseUnits {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DoseUnits::Mg => f.write_str("mg"),
+            DoseUnits::Ml => f.write_str("ml"),
+            DoseUnits::Ug => f.write_str("µg"),
+            DoseUnits::G => f.write_str("g"),
+            DoseUnits::Invalid => todo!(),
+        }
     }
 }
 
